@@ -10,7 +10,7 @@ class ParentHomeworkClubView extends React.Component {
             body: JSON.stringify({ studentId: "5eb0a14c8ec536f27b41a3b0" })
         })
             .then(res => res.json())
-            .then(homeworkClubs => console.log(homeworkClubs))
+            .then(homeworkClubs => this.setState({homeworkClubs}))
     }
 // this.setState({ homeworkClubs })
 

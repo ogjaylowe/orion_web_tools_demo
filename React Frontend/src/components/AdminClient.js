@@ -1,7 +1,7 @@
 import React from 'react'
 
 import LoginMenu from './LoginMenu.js';
-import ParentView from "./ParentView.js";
+import AdminView from "./AdminView.js";
 
 import CollectionForm from './CollectionForm.js'
 
@@ -26,7 +26,7 @@ var uniqid = require('uniqid');
 // parent view with the StudentID as a prop
 
 class AdminClient extends React.Component {
-    state = { condition: "", loginState: "", parent: false, admin: false }
+    state = { username: "", password: "", loginState: "", admin: false }
 
     componentDidMount() {
         this.setState({
@@ -34,39 +34,32 @@ class AdminClient extends React.Component {
                 <CollectionForm >
                     <LoginMenu
                         callbackButton={() => this.authCheck()}
-                        callbackOnChange={(event) => this.updateLoginState(event)}
+                        callbackOnChangeUsername={(event) => this.updateUsernameState(event)}
+                        callbackOnChangePassword={(event) => this.updatePasswordState(event)}
                     />
                 </CollectionForm>
         })
     }
 
     // updates the state on keystroke change
-    updateLoginState(event) {
-        this.setState({ condition: event.target.value })
+    updateUsernameState(event) {
+        this.setState({ username: event.target.value })
+    }
+
+    updatePasswordState(event) {
+        this.setState({ password: event.target.value })
     }
 
     // TODO: update the fetch to search for a parent username and password!
     authCheck() {
-        fetch('/parents', {
-            method: 'POST',
-            headers: new Headers({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ fname: this.state.condition })
-        })
-            .then(res => res.json())
-            .then(parent => {
-                if (parent != false) {
-                    this.setState({ parent })
-                }
-            })
-            .then(() => this.conditionalCheck())
-
         fetch('/admin', {
             method: 'POST',
             headers: new Headers({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ fname: this.state.condition })
+            body: JSON.stringify({ username: this.state.username, password: this.state.password })
         })
             .then(res => res.json())
             .then(admin => {
+                console.log(admin)
                 if (admin != false) {
                     this.setState({ admin })
                 }
@@ -76,10 +69,8 @@ class AdminClient extends React.Component {
 
     // performs auth check
     conditionalCheck() {
-        //console.log(this.state)
-        // TODO: instead of using false here, make a prop in parent called userType and have it = parent
-        if (this.state.parent != false) {
-            this.setState({ loginState: <ParentView studentId={this.state.parent.student} /> })
+        if (this.state.admin != false) {
+            this.setState({ loginState: <AdminView /> })
         } else {
             alert(this.state.condition + " is not a registered username!")
         }

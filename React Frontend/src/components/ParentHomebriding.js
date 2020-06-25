@@ -3,9 +3,6 @@ import React from "react"
 import Selector from "./Selector.js";
 import configValues from "../config.js"
 
-
-// {_id: "5e8e39d60bc7d2a215cc28c7", fname: "jill", lname: "crown", totalHours: 50}
-
 class ParentHomebriding extends React.Component {
     state = { student: {}, hours: 15 }
 

@@ -1,6 +1,9 @@
 import React from "react";
 
 function HomebridingTable(props) {
+
+    console.log(props.students)
+
     return (
         <div className="uk-flex uk-flex-center uk-margin-right uk-margin-left">
             <table className="uk-table uk-table-striped uk-table-divider uk-table-hover ">
@@ -19,10 +22,10 @@ function HomebridingTable(props) {
                     {props.students.map(
                         (student) => (
                             <tr>
-                                <td>{student}</td>
+                                <td>{student.lname + ", " + student.fname}</td>
                                 <td>hours this term</td>
-                                <td>total hours</td>
-                                <td>hours to go</td>
+                                <td>{student.totalHours}</td>
+                                <td>{320 - student.totalHours}</td>
                             </tr>
                         )
                     )}

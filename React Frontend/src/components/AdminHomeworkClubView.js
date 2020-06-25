@@ -28,7 +28,8 @@ import {
 var uniqid = require('uniqid');
 
 // reference values from config.js
-var students = configValues.students
+//var students = configValues.students
+//var students = ["Cottontail, Ralph"]
 var times = configValues.times
 var classes = configValues.classes
 var periods = configValues.periods
@@ -58,33 +59,90 @@ class AdminHomeworkClubView extends React.Component {
         descriptionText: "",
     }
 
-    // TODO: use componentDidMount to collect and populate all current homwework club/detention table entries
+    // GET all currentHomeworkClubEntries data to populate table with and store them in state as "homeworkEntries"
     componentDidMount() {
-        // TODO: add the fetch command that collects detention document information
-        // to build the TableR with in conjunction with setState here!
+        fetch("/api/adminHomeworkClub", {
+            method: 'GET'
+        })
+            .then(res => res.json())
+            .then(homeworkEntries => this.initialTablePopulation(homeworkEntries))
 
         this.setState({
             dueDate: getFormattedDate(new Date())
         })
     }
 
+    // a helper function that converts information from the 'currentHomeworkClubEntries' MongoDB collection 
+    // into the initial TableComponent entries displayed by the TableR component
+    initialTablePopulation(listOfEntries) {
+        console.log(listOfEntries)
+        // for each value (aka property) of the MongoDB document object, append a TableComponent to the list of homeworkEntries
+        for (let [key, value] of Object.entries(listOfEntries)) {
+            console.log(" *** value *** ", value)
+            // TODO: use the entries ObjectId value as the reference index so we can delete it from DB later down the road
+
+            this.setState(prevState => ({
+                homeworkEntries: [...prevState.homeworkEntries,
+                <TableComponent
+                    id={uniqid()}
+                    referenceIndex={value._id}
+                    studentName={value.student.fname + " " + value.student.lname}
+                    selectorValue={value.class}
+                    description={value.description}
+                    dueDate={value.date}
+                    callbackRef={(event) => this.onClickRemoveCard(event)}
+                />
+                ]
+            }))
+        }
+    }
+
+    // POST a new table entry into the currentHomeworkClubEntries collection in the DB
     onClickAddHomeworkCard() {
-        // TODO: refactor these uncontrolled components
-        var qstudentName = document.querySelector('#studentNames').value
-        var qclassSection = document.querySelector('#classSection').value
+        // splice first and last name into two seperate values
+        var splicedName = document.querySelector('#studentName').value.split(', ')
 
-        var qReferenceIndex = uniqid()
+        // data sent in the body to the express server for saving in MongoDB
+        var data = {
+            date: document.querySelector('#date').value,
+            assignedBy: "Mr.Lowe",
+            period: document.querySelector('#classPeriod').value,
+            class: document.querySelector('#classSection').value,
+            description: document.querySelector('#descriptionText').value,
+            // for Mongoose to query student ObjectId 
+            studentFname: splicedName[1],
+            studentLname: splicedName[0]
+        }
 
-        // TODO: add a fetch API command here to update the homework club collection that TableR draws from
+        // perform POST API operation to create a new currentHomeworkClub document in DB
+        fetch("/api/adminHomeworkClub", {
+            method: 'POST',
+            headers: new Headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(data)
+        })
+            .then(res => res.json())
+            // use the responseObject's _id field for the TableComponent's referenceIndex property
+            // we use this value in onClickRemoveCard to filter it out later
+            .then(responseObject => this.additionalTablePopulation(responseObject._id))
+    }
+
+    // a helper function which adds additional TableR entries using the _id of the latest created document object
+    additionalTablePopulation(responseId) {
+        var splicedName = document.querySelector('#studentName').value.split(', ')
+
+        // the TableR component needs a TableComponent appended to it as well since we now have an 
+        // additonal homeworkEntry!
         this.setState(prevState => ({
             homeworkEntries: [...prevState.homeworkEntries,
             <TableComponent
+                // THIS ID COULD BE A MAJOR PROBLEM FOR DELETING TABLE ENTRIES! 
                 id={uniqid()}
-                referenceIndex={qReferenceIndex}
-                studentName={qstudentName}
-                selectorValue={qclassSection}
-                description={this.state.descriptionText}
-                dueDate={this.state.dueDate}
+                // THIS REFERENCE COULD BE A MAJOR PROBLEM!
+                referenceIndex={responseId}
+                studentName={splicedName[1] + " " + splicedName[0]}
+                selectorValue={document.querySelector('#classSection').value}
+                description={document.querySelector('#descriptionText').value}
+                dueDate={document.querySelector('#date').value}
                 callbackRef={(event) => this.onClickRemoveCard(event)}
             />
             ]
@@ -92,9 +150,26 @@ class AdminHomeworkClubView extends React.Component {
     }
 
     onClickRemoveCard(event) {
+        // data sent in the body to the express server for saving in MongoDB
+        var data = {
+            referenceId: event.target.id,
+        }
+
+        console.log(event.target.id)
+
+        // perform fetch
+        fetch("/api/adminHomeworkClub", {
+            method: 'DELETE',
+            headers: new Headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(data)
+        })
+            .then(res => res.json())
+
+        // remove the TableComponent from the current list via filter
         this.setState(
             {
                 homeworkEntries: this.state.homeworkEntries.filter(function (entry) {
+                    // return all entries which do not share the id of the target entry
                     return entry.props.referenceIndex !== event.target.id
                 })
             }
@@ -106,12 +181,20 @@ class AdminHomeworkClubView extends React.Component {
             <div>
                 <CollectionForm collectionLegend={"Homework Club"}>
                     <Selector
-                        configObjectValue="studentNames"
-                        arrayToMap={students}
+                        configObjectValue="studentName"
+                        arrayToMap={this.props.students}
                         labelText="Select a student: "
                     />
-                    <Selector configObjectValue="classSection" arrayToMap={classes} labelText="Class of assignment: " />
-                    <Selector configObjectValue="classPeriod" arrayToMap={periods} labelText="Class Period: " />
+                    <Selector
+                        configObjectValue="classSection"
+                        arrayToMap={classes}
+                        labelText="Class of assignment: "
+                    />
+                    <Selector
+                        configObjectValue="classPeriod"
+                        arrayToMap={periods}
+                        labelText="Class Period: "
+                    />
                     <DescriptionText
                         callbackFunction={() => this.setState({ descriptionText: document.querySelector('#descriptionText').value })}
                         passedStateValue={this.state.descriptionText}
@@ -125,8 +208,8 @@ class AdminHomeworkClubView extends React.Component {
                     <CallbackButton callbackFunction={() => this.onClickAddHomeworkCard()} buttonDisplayValue="Add Student" />
                 </CollectionForm>
 
-                <TableR entries={this.state.homeworkEntries} tableHeaders={hwcHeaders} tableLegend="Homework Club Entries" />ƒ
-            </div>
+                <TableR entries={this.state.homeworkEntries} tableHeaders={hwcHeaders} tableLegend="Homework Club Entries" />
+            </div >
         )
     }
 }

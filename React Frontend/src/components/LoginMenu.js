@@ -25,10 +25,16 @@ class LoginMenu extends React.Component {
                             id="userName"
                             type="text"
                             placeholder="Username"
-                            onChange={this.props.callbackOnChange}
+                            onChange={this.props.callbackOnChangeUsername}
                         />
                         <label htmlFor="pwd">Password: </label>
-                        <input className="uk-margin-left uk-input uk-form uk-form-width-medium " id="pwd" type="text" placeholder="Password"></input>
+                        <input
+                            className="uk-input uk-form uk-form-width-medium uk-margin-right uk-margin-left"
+                            id="Pwd"
+                            type="text"
+                            placeholder="Password"
+                            onChange={this.props.callbackOnChangePassword}
+                        />
 
                         <button onClick={this.props.callbackButton} type="button" className="uk-align-right uk-margin-right uk-button uk-button-primary">Log In</button>
                     </div>

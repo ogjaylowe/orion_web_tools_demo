@@ -31,7 +31,7 @@ import {
 var uniqid = require('uniqid');
 
 // reference values from config.js
-var students = configValues.students
+// var students = ["Cottontail, Ralph"]
 var times = configValues.times
 var classes = configValues.classes
 var periods = configValues.periods
@@ -41,7 +41,33 @@ var hwcHeaders = configValues.homeworkClubHeaders
 var detentionHeaders = []
 
 class AdminView extends React.Component {
-    state = {}
+    state = {allStudentInfo:[], students: []}
+
+    // GET all currentHomeworkClubEntries data to populate table with and store them in state as "homeworkEntries"
+    componentDidMount() {
+        fetch("/api/fetchStudentNames", {
+            method: 'GET'
+        })
+            .then(res => res.json())
+            .then(students => this.collectStudentInfo(students))
+    }
+
+    // helper function that collects all the student info from DB 
+    collectStudentInfo(listOfEntries){
+        // sort all fetched data by last name of student
+        listOfEntries.sort((a, b) => (a.lname > b.lname) ? 1 : -1)
+        
+        // grab the entire document of each student for components that need more details
+        this.setState({allStudentInfo: listOfEntries})
+        
+        // grab the "lname" and "fname" properties of each student for components only need name data
+        for (let [key, value] of Object.entries(listOfEntries)) {
+            this.setState(prevState => ({
+                // append those values to the list of students in state
+                students: [...prevState.students, value.lname + ", " + value.fname]
+            }))
+        }
+    }
 
     render() {
         return (
@@ -59,14 +85,14 @@ class AdminView extends React.Component {
 
                     <Switch>
                         <Route path="/homeworkclub">
-                            <AdminHomeworkClubView />
+                            <AdminHomeworkClubView students={this.state.students}/>
                         </Route>
                     </Switch>
 
                     <Switch>
                         <Route path="/homebriding">
                             <CollectionForm collectionLegend={""}>
-                                <HomebridingTable students={students} tableLegend={"Homebriding 2020"} />
+                                <HomebridingTable students={this.state.allStudentInfo} tableLegend={"Homebriding 2020"} />
                             </CollectionForm>
                         </Route>
                     </Switch>

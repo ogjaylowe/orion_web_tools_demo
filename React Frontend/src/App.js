@@ -27,7 +27,6 @@ function App() {
                         <AdminClient />
                     </Route>
 
-                    <AdminView />
 
                     <ul>
                         <li>
